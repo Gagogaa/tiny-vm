@@ -1,3 +1,4 @@
+// NOTE C-p in vim is auto complete
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -7,7 +8,17 @@ typedef enum
     ADD,
     POP,
     SET,
-    HLT
+    HLT,
+    MUL,
+    DIV,
+    SUB,
+    MOV,
+    LOG,
+    IF,
+    IFN,
+    GLD,
+    GPT,
+    NOP
 } InstructionSet;
 
 typedef enum
@@ -39,9 +50,16 @@ push(int val)
 }
 
 int
-pop()
+val_pop()
 {
     return stack[sp--];
+}
+
+// TODO maybe this should be called next_instruction (or something like that) instead of having 2 pop methods
+int
+prg_pop()
+{
+    return program[++ip];
 }
 
 int
@@ -62,21 +80,83 @@ eval(int instr)
         }
         case PSH:
         {
-            push(program[++ip]);
+            push(prg_pop());
             break;
         }
         case POP:
         {
-            printf("Popped %d\n", pop());
+            printf("Popped %d\n", val_pop());
             break;
         }
         case ADD:
         {
-            int a = pop();
-            int b = pop();
+            int a = val_pop();
+            int b = val_pop();
             push(a + b);
             break;
         }
+        case SET:
+        {
+            int reg = val_pop();
+            int val = val_pop();
+            registers[reg] = val;
+            break;
+        }
+        case MUL:
+        {
+            int a = val_pop();
+            int b = val_pop();
+            push(a * b);
+            break;
+        }
+        case DIV:
+        {
+            int a = val_pop();
+            int b = val_pop();
+            push(a / b);
+            break;
+        }
+        case SUB:
+        {
+            int a = val_pop();
+            int b = val_pop();
+            push(a - b);
+            break;
+        }
+        case MOV:
+        {
+            int reg_a = prg_pop();
+            int reg_b = prg_pop();
+            registers[reg_b] = registers[reg_a];
+            break;
+        }
+        case LOG:
+        {
+            printf("%d\n", prg_pop());
+            break;
+        }
+        // TODO make these work
+        case IF:
+        {
+            break;
+        }
+        case IFN:
+        {
+            break;
+        }
+        case GLD:
+        {
+            push(registers[prg_pop()]);
+            break;
+        }
+        case GPT:
+        {
+            int reg = prg_pop();
+            registers[reg] = val_pop();
+            break;
+        }
+        case NOP:
+            break;
     }
 }
 
