@@ -1,161 +1,165 @@
-// NOTE C-p in vim is auto complete
+// TODO: How to handle vm errors?
+// TODO: Maybe have some standard out operations?
+// TODO: Maybe some memory related functinos?
+// TODO: Load in files while executing. Use threads?
+// TODO: Command line arguments.
+
 #include <stdio.h>
 #include <stdbool.h>
 
 typedef enum
 {
-    PSH,
-    ADD,
-    POP,
-    SET,
-    HLT,
-    MUL,
-    DIV,
-    SUB,
-    MOV,
-    LOG,
-    IF,
-    IFN,
-    GLD,
-    GPT,
-    NOP
+    HLT_INS, // HLT 0  | HLT              | Stop the vm                                                                |
+    PSH_INS, // PSH 1  | PSH              | Push a value on top of the stack                                           |
+    POP_INS, // POP 2  | POP              | Pop a value off of the stack                                               |
+    ADD_INS, // ADD 3  | ADD              | Pop and add the top two values of the stack pushing the result on top      |
+    SUB_INS, // SUB 4  | SUB              | Pop and subtract the top two values of the stack pushing the result on top |
+    MUL_INS, // MUL 5  | MUL              | Pop and multiply the top two values of the stack pushing the result on top |
+    DIV_INS, // DIV 6  | DIV              | Pop and divide the top two values of the stack pushing the result on top   |
+    SET_INS, // SET 7  | SET reg, val     | Set the value of reg to val                                                |
+    MOV_INS, // MOV 8  | MOV reg_a, reg_b | Move the value in reg_a to reg_b                                           |
+     IF_INS, //  IF 9  |  IF reg, val, ip | If reg == val set the instruction pointer to ip                            |
+    IFN_INS, // IFN 10 | IFN reg, val, ip | If reg != val set teh instruction pointer to ip                            |
+    GLD_INS, // GLD 11 | GLD reg          | Pushes the value in reg on top the the stack                               |
+    GPT_INS, // GPT 12 | GPT reg          | Pushes teh top of the stack into reg                                       |
+    LOG_INS, // LOG 13 | LOG val          | Prints val                                                                 |
+    NOP_INS  // NOP 14 | NOP              | No operation                                                               |
 } InstructionSet;
 
 typedef enum
 {
-    A, B, C, D, E, F, PC, SP,
+    A, B, C, D, E, F, G, H,
+    // ECX, // Loop count
+    IP,
+    SP,
     REGISTER_COUNT
 } Registers;
 
-#define sp (registers[SP])
-#define ip (registers[PC])
-
 int registers[REGISTER_COUNT];
 bool running = true;
-int stack[4096];
+int stack[4096]; // TODO Maybe needs to resize itself?
+
+// A better version of the program for loading things in
+// int *instructions
 
 int const program[] = {
-    PSH, 5,
-    PSH, 6,
-    ADD,
-    POP,
-    HLT
+    PSH_INS, 5,
+    PSH_INS, 6,
+    ADD_INS,
+    POP_INS,
+    HLT_INS
 };
 
-void
-push(int val)
-{
-    sp++;
-    stack[sp] = val;
-}
+#define TARGET(op) \
+    /* TARGET_##op: lets you jump to the case statment? */ \
+    case op:
 
-int
-val_pop()
-{
-    return stack[sp--];
-}
-
-// TODO maybe this should be called next_instruction (or something like that) instead of having 2 pop methods
-int
-prg_pop()
-{
-    return program[++ip];
-}
-
-int
-fetch()
-{
-    return program[ip];
-}
+#define PUSH(val) (stack[(registers[SP])++] = (val))
+#define POP() (stack[--(registers[SP])])
+#define FETCH() (program[(registers[IP])++])
 
 void
 eval(int instr)
 {
     switch (instr)
     {
-        case HLT:
+        TARGET(HLT_INS)
         {
             running = false;
             break;
         }
-        case PSH:
+        TARGET(PSH_INS)
         {
-            push(prg_pop());
+            int val = FETCH();
+            PUSH(val);
             break;
         }
-        case POP:
+        TARGET(POP_INS)
         {
-            printf("Popped %d\n", val_pop());
+            int val = POP();
+            printf("Popped %d\n", val);
             break;
         }
-        case ADD:
+        TARGET(ADD_INS)
         {
-            int a = val_pop();
-            int b = val_pop();
-            push(a + b);
+            int a = POP();
+            int b = POP();
+            PUSH(a + b);
             break;
         }
-        case SET:
+        TARGET(SET_INS)
         {
-            int reg = val_pop();
-            int val = val_pop();
+            int reg = POP();
+            int val = POP();
             registers[reg] = val;
             break;
         }
-        case MUL:
+        TARGET(MUL_INS)
         {
-            int a = val_pop();
-            int b = val_pop();
-            push(a * b);
+            int a = POP();
+            int b = POP();
+            PUSH(a * b);
             break;
         }
-        case DIV:
+        TARGET(DIV_INS)
         {
-            int a = val_pop();
-            int b = val_pop();
-            push(a / b);
+            int a = POP();
+            int b = POP();
+            PUSH(a / b); // What to do if divide by zero?
             break;
         }
-        case SUB:
+        TARGET(SUB_INS)
         {
-            int a = val_pop();
-            int b = val_pop();
-            push(a - b);
+            int a = POP();
+            int b = POP();
+            PUSH(a - b);
             break;
         }
-        case MOV:
+        TARGET(MOV_INS)
         {
-            int reg_a = prg_pop();
-            int reg_b = prg_pop();
+            int reg_a = FETCH();
+            int reg_b = FETCH();
             registers[reg_b] = registers[reg_a];
             break;
         }
-        case LOG:
+        TARGET(LOG_INS)
         {
-            printf("%d\n", prg_pop());
+            printf("%d\n", FETCH());
             break;
         }
-        // TODO make these work
-        case IF:
+        TARGET(IF_INS)
         {
+            int reg = FETCH();
+            int val = FETCH();
+            int jmp_loc = FETCH();
+            if (registers[reg] == val)
+                (registers[IP]) = jmp_loc;
             break;
         }
-        case IFN:
+        TARGET(IFN_INS)
         {
+            int reg = FETCH();
+            int val = FETCH();
+            int jmp_loc = FETCH();
+            if (registers[reg] != val)
+                (registers[IP]) = jmp_loc;
             break;
         }
-        case GLD:
+        TARGET(GLD_INS)
         {
-            push(registers[prg_pop()]);
+            int reg = FETCH();
+            int val = registers[reg];
+            PUSH(val);
             break;
         }
-        case GPT:
+        TARGET(GPT_INS)
         {
-            int reg = prg_pop();
-            registers[reg] = val_pop();
+            int reg = FETCH();
+            int val = POP();
+            registers[reg] = val;
             break;
         }
-        case NOP:
+        TARGET(NOP_INS)
             break;
     }
 }
@@ -165,7 +169,6 @@ main()
 {
     while(running)
     {
-        eval(fetch());
-        ip++;
+        eval(FETCH());
     }
 }

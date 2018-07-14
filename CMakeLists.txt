@@ -1,5 +1,0 @@
-cmake_minimum_required(VERSION 3.5) 
-project(tiny-vm C) 
-add_definitions(-g -O3 -Wall -Wextra -Wshadow -std=c11)
-add_executable(vm main.c)
-# target_link_libraries(vm m)
