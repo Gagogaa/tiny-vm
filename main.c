@@ -20,16 +20,14 @@ int const program[] = {
 int
 main()
 {
-    Cpu *cpu = vm_new();
+    Cpu *cpu = vm_new(program);
     if (cpu == NULL)
         return 1;
 
-    cpu->instructions = program;
-
     while(cpu->running)
     {
-        vm_step(cpu);
+        UNUSED(vm_step(cpu));
     }
 
-    vm_destroy(cpu);
+    UNUSED(vm_destroy(cpu));
 }

@@ -3,15 +3,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-typedef struct
-{
-    int const *instructions;
-    int *stack; // TODO Maybe needs to resize itself?
-    int ip;
-    int sp;
-    bool running;
-} Cpu;
-
 typedef enum
 {
     // These will store and load things from the heap
@@ -51,16 +42,60 @@ typedef enum
 
     LOG, // LOG 13 | LOG val          | Prints val                                                                 |
     NOP  // NOP 14 | NOP              | No operation                                                               |
-} InstructionSet;
+} Cpu_Instruction;
+
+typedef enum
+{
+    CPU_SUCCESS,
+    CPU_NULL_BEFORE_DESTROY,
+    CPU_STACK_NULL_BEFORE_DESTROY,
+    CPU_NULL_BEFORE_RESET,
+    CPU_NULL_BEFORE_STEP,
+    CPU_STACK_NULL_BEFORE_STEP,
+    CPU_INSTRUCTIONS_NULL_BEFORE_STEP,
+    CPU_STEP_CALLED_ON_HALTED_CPU,
+    CPU_SP_ZERO_BEFORE_DROP,
+    CPU_DIV_BY_ZERO,
+    CPU_SP_EXCEEDED_MAX_STACK_SIZE,
+    CPU_SP_LESS_THAN_ZERO,
+    CPU_ERROR_COUNT
+} Cpu_Error_Code;
+
+// TODO Why is this included twice?
+/* char const *cpu_error_code_strings[CPU_ERROR_COUNT] = */
+/* { */
+/*         "CPU_SUCCESS", */
+/*         "CPU_NULL_BEFORE_DESTROY", */
+/*         "CPU_STACK_NULL_BEFORE_DESTROY", */
+/*         "CPU_NULL_BEFORE_RESET", */
+/*         "CPU_NULL_BEFORE_STEP", */
+/*         "CPU_STACK_NULL_BEFORE_STEP", */
+/*         "CPU_INSTRUCTIONS_NULL_BEFORE_STEP", */
+/*         "CPU_STEP_CALLED_ON_HALTED_CPU", */
+/*         "CPU_SP_ZERO_BEFORE_DROP", */
+/*         "CPU_DIV_BY_ZERO", */
+/*         "CPU_SP_EXCEEDED_MAX_STACK_SIZE", */
+/*         "CPU_SP_LESS_THAN_ZERO" */
+/* }; */
+
+typedef struct
+{
+    int const *instructions;
+    int *stack;
+    int ip;
+    int sp;
+    Cpu_Error_Code last_error;
+    bool running;
+} Cpu;
 
 Cpu *
-vm_new();
+vm_new(int const *program);
 
-void
+Cpu_Error_Code
 vm_destroy(Cpu *cpu);
 
-void
+Cpu_Error_Code
 vm_step(Cpu *cpu);
 
-void
+Cpu_Error_Code
 vm_reset(Cpu *cpu);
