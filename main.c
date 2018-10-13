@@ -1,32 +1,44 @@
-// TODO: How to handle vm errors?
-// TODO: Maybe have some standard io operations?
-// TODO: Maybe some memory related functinos?
-// TODO: Load in files while executing. Use threads?
-// TODO: Command line arguments.
+// TODO: Command line arguments
+// TODO: Debugging mode with output
+// TODO: ASM Compiler?
+// TODO: Load program from file
+// TODO: Basic input and output streams
+// TODO: Documentation
 
 #include <stdio.h>
 #include <stdbool.h>
 #include "cpu.h"
 #include "common.h"
 
-int const program[] = {
+char const program[] = {
     PSH, 5,
     PSH, 6,
     ADD,
-    POP,
+    PSH, 0,
+    PSH, 5,
+    DIV,
     HLT
 };
 
 int
-main()
+main(int argc, char **argv)
 {
-    Cpu *cpu = vm_new(program);
-    if (cpu == NULL)
-        return 1;
+    UNUSED(argc);
+    UNUSED(argv);
 
-    while(cpu->running)
+    Cpu *cpu = vm_new(program);
+
+    ASSERT(cpu != NULL, 1);
+
+    while (cpu->running)
     {
-        UNUSED(vm_step(cpu));
+        Cpu_Error_Code error = vm_step(cpu);
+
+        if (error)
+        {
+            printf("Error: %s\n", cpu_error_code_string(error));
+            break;
+        }
     }
 
     UNUSED(vm_destroy(cpu));

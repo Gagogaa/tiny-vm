@@ -1,6 +1,3 @@
-// TODO I feel like the CPU error codes are going to give problems if I dont just use the error_code thats on the CPU object
-// Or maybe I should fix the drop function some other way...
-
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,26 +6,56 @@
 
 int const DEFAULT_STACK_SIZE = 4096;
 
-Cpu *
-vm_new(int const *program)
+#define X(val) #val
+
+char const *cpu_error_code_strings[CPU_ERROR_COUNT + 1] =
 {
-    if (program == NULL)
-        return 0;
+    CPU_ERROR_CODES
+};
+
+char const *cpu_instruction_strings[NOP + 1] =
+{
+    CPU_INSTRUCTIONS
+};
+
+#undef X
+
+char const *
+cpu_error_code_string(Cpu_Error_Code code)
+{
+    if (code < 0 || code > CPU_ERROR_COUNT)
+        return "";
+    else
+        return cpu_error_code_strings[code];
+}
+
+char const *
+cpu_instruction_string(Cpu_Instruction inst)
+{
+    if (inst < 0 || inst > NOP)
+        return "";
+    else
+        return cpu_instruction_strings[inst];
+}
+
+Cpu *
+vm_new(char const *instructions)
+{
+    ASSERT(instructions != NULL, NULL);
 
     Cpu *cpu = malloc(sizeof (Cpu));
 
-    if (cpu == NULL)
-        return 0;
+    ASSERT(cpu != NULL, NULL);
 
-    cpu->stack = malloc(sizeof (int) * DEFAULT_STACK_SIZE);
+    cpu->stack = malloc(sizeof (char) * DEFAULT_STACK_SIZE);
 
     if (cpu->stack == NULL)
     {
         free(cpu);
-        return 0;
+        return NULL;
     }
 
-    cpu->instructions = program;
+    cpu->instructions = instructions;
     cpu->running = true;
     cpu->ip = 0;
     cpu->sp = 0;
@@ -41,31 +68,30 @@ vm_new(int const *program)
 Cpu_Error_Code
 vm_destroy(Cpu *cpu)
 {
-    if (cpu == NULL)
-        return CPU_NULL_BEFORE_DESTROY;
+    ASSERT(cpu != NULL, CPU_NULL_BEFORE_DESTROY);
+
+    Cpu_Error_Code error_code = CPU_SUCCESS;
+
+    if (cpu->stack == NULL)
+        error_code = CPU_STACK_NULL_BEFORE_DESTROY;
     else
-    {
-        Cpu_Error_Code error_code = CPU_SUCCESS;
+        free(cpu->stack);
 
-        if (cpu->stack == NULL)
-            error_code = CPU_STACK_NULL_BEFORE_DESTROY;
-        else
-            free(cpu->stack);
+    free(cpu);
 
-        free(cpu);
-
-        return error_code;
-    }
+    return error_code;
 }
 
 Cpu_Error_Code
 vm_reset(Cpu *cpu)
 {
-    if (cpu == NULL)
-        return CPU_NULL_BEFORE_RESET;
+    ASSERT(cpu != NULL, CPU_NULL_BEFORE_RESET);
+    ASSERT(cpu->stack != NULL, CPU_STACK_NULL_BEFORE_RESET);
+    ASSERT(cpu->instructions != NULL, CPU_INSTRUCTIONS_NULL_BEFORE_RESET);
 
     cpu->ip = 0;
     cpu->sp = 0;
+    cpu->stack[0] = 0; // Clear the first value
     cpu->last_error = CPU_SUCCESS;
 
     return CPU_SUCCESS;
@@ -80,7 +106,7 @@ push(Cpu *cpu, int val)
 int
 drop(Cpu *cpu)
 {
-    if (cpu->sp < 0)
+    if (cpu->sp == 0)
     {
         cpu->last_error = CPU_SP_ZERO_BEFORE_DROP;
         return 0;
@@ -97,23 +123,12 @@ fetch(Cpu *cpu)
 Cpu_Error_Code
 vm_step(Cpu *cpu)
 {
-    if (cpu == NULL)
-        return  CPU_NULL_BEFORE_STEP;
-
-    Cpu_Error_Code error_code = CPU_SUCCESS;
-
-    if (cpu->stack == NULL)                  error_code = CPU_STACK_NULL_BEFORE_STEP;
-    else if (cpu->instructions == NULL)      error_code = CPU_INSTRUCTIONS_NULL_BEFORE_STEP;
-    else if (cpu->sp > DEFAULT_STACK_SIZE)   error_code = CPU_SP_EXCEEDED_MAX_STACK_SIZE;
-    else if (cpu->sp < 0)                    error_code = CPU_SP_LESS_THAN_ZERO;
-    else if (!cpu->running)                  error_code = CPU_STEP_CALLED_ON_HALTED_CPU;
-    else if (cpu->last_error != CPU_SUCCESS) error_code = cpu->last_error;
-    else if (error_code != CPU_SUCCESS)
-    {
-        cpu->running = false;
-        cpu->last_error = error_code;
-        return error_code;
-    }
+    ASSERT(cpu != NULL, CPU_NULL_BEFORE_STEP);
+    ASSERT(cpu->stack != NULL, CPU_STACK_NULL_BEFORE_STEP);
+    ASSERT(cpu->instructions != NULL, CPU_INSTRUCTIONS_NULL_BEFORE_STEP);
+    ASSERT(cpu->sp <= DEFAULT_STACK_SIZE, CPU_SP_EXCEEDED_MAX_STACK_SIZE);
+    ASSERT(cpu->running, CPU_STEP_CALLED_ON_HALTED_CPU);
+    ASSERT(cpu->last_error == CPU_SUCCESS, cpu->last_error);
 
     switch (fetch(cpu))
     {
@@ -131,7 +146,6 @@ vm_step(Cpu *cpu)
     case POP:
     {
         int val = drop(cpu);
-        printf("%d\n", val);
         UNUSED(val);
         break;
     }
@@ -155,7 +169,7 @@ vm_step(Cpu *cpu)
         int b = drop(cpu);
 
         if (b == 0)
-            error_code = CPU_DIV_BY_ZERO;
+            cpu->last_error = CPU_DIV_BY_ZERO;
         else
             push(cpu, a / b);
 
@@ -195,11 +209,6 @@ vm_step(Cpu *cpu)
         push(cpu, a | b);
         break;
     }
-    case LOG:
-    {
-        printf("%d\n", fetch(cpu));
-        break;
-    }
     case DUP:
     {
         int val = drop(cpu);
@@ -221,13 +230,6 @@ vm_step(Cpu *cpu)
         push(cpu, (a > b) ? 1 : 0);
         break;
     }
-    case ISGE:
-    {
-        int a = drop(cpu);
-        int b = drop(cpu);
-        push(cpu, (a >= b) ? 1 : 0);
-        break;
-    }
     case JMP:
     {
         int loc = fetch(cpu);
@@ -246,8 +248,5 @@ vm_step(Cpu *cpu)
         break;
     }
 
-    if (error_code != CPU_SUCCESS)
-        cpu->last_error = error_code;
-
-    return error_code;
+    return cpu->last_error;
 }
