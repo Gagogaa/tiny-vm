@@ -1,10 +1,3 @@
-// TODO: Command line arguments
-// TODO: Debugging mode with output
-// TODO: ASM Compiler?
-// TODO: Load program from file
-// TODO: Basic input and output streams
-// TODO: Documentation
-
 #include <stdio.h>
 #include <stdbool.h>
 #include "cpu.h"
