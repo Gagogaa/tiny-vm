@@ -14,25 +14,25 @@ char const program[] = {
 };
 
 int
-main(int argc, char **argv)
+main (int argc, char **argv)
 {
-    UNUSED(argc);
-    UNUSED(argv);
+    UNUSED (argc);
+    UNUSED (argv);
 
-    Cpu *cpu = vm_new(program);
+    Cpu *cpu = vm_new (program);
 
-    ASSERT(cpu != NULL, 1);
+    ASSERT (cpu != NULL, 1);
 
     while (cpu->running)
     {
-        Cpu_Error_Code error = vm_step(cpu);
+        Cpu_Error_Code error = vm_step (cpu);
 
         if (error)
         {
-            printf("Error: %s\n", cpu_error_code_string(error));
+            printf ("Error: %s\n", cpu_error_code_string (error));
             break;
         }
     }
 
-    UNUSED(vm_destroy(cpu));
+    UNUSED (vm_destroy (cpu));
 }
