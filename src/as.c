@@ -163,6 +163,11 @@ main (int argc, char *argv[])
         EMIT (PSH)
         EMIT (JMP)
         EMIT (JIF)
+        else
+        {
+            exit (-1);
+        }
+
         if (strcmp (opcode_str, "PSH") == 0
             || strcmp (opcode_str, "JMP") == 0
             || strcmp (opcode_str, "JIF") == 0)
@@ -170,10 +175,6 @@ main (int argc, char *argv[])
             get_next (finfile, opcode_str);
             opcode_arg = strtol (opcode_str, &end, 10);
             fwrite (&opcode_arg, sizeof (char), 1, foutfile);
-        }
-        else
-        {
-            exit (-1);
         }
     }
 
