@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "opcodes.h"
-#include "common.h"
 #include "string.h"
 
 
@@ -161,25 +160,15 @@ main (int argc, char *argv[])
         EMIT (ISEQ)
         EMIT (ISGT)
         EMIT (NOP)
-        else if (strcmp (opcode_str, "PSH") == 0)
+        EMIT (PSH)
+        EMIT (JMP)
+        EMIT (JIF)
+        if (strcmp (opcode_str, "PSH") == 0
+            || strcmp (opcode_str, "JMP") == 0
+            || strcmp (opcode_str, "JIF") == 0)
         {
-            fwrite (&instructions[PSH], sizeof (char), 1, foutfile);
             get_next (finfile, opcode_str);
             opcode_arg = strtol (opcode_str, &end, 10);
-            fwrite (&opcode_arg, sizeof (char), 1, foutfile);
-        }
-        else if (strcmp (opcode_str, "JMP") == 0)
-        {
-            fwrite (&instructions[JMP], sizeof (char), 1, foutfile);
-            get_next (finfile, opcode_str);
-            opcode_arg = strtoul (opcode_str, &end, 10);
-            fwrite (&opcode_arg, sizeof (char), 1, foutfile);
-        }
-        else if (strcmp (opcode_str, "JIF") == 0)
-        {
-            fwrite (&instructions[JIF], sizeof (char), 1, foutfile);
-            get_next (finfile, opcode_str);
-            opcode_arg = strtoul (opcode_str, &end, 10);
             fwrite (&opcode_arg, sizeof (char), 1, foutfile);
         }
         else
