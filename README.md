@@ -5,7 +5,7 @@ where it comes to an end.
 
 
 ## Compiling tiny-vm
-tiny-vm uses meson for its build system. Read more about it and how to install it [here](mesonbuild.com).
+tiny-vm uses meson for its build system. Read more about it and how to install it [here](https://mesonbuild.com).
 
 Once you have meson installed run the following to build the vm and assembler:
 ```bash
