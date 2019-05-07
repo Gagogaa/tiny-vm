@@ -48,12 +48,10 @@ vm_instruction_string (VmInstruction inst)
 }
 
 
-// TODO Here I think we can improve this by having a version that
-// reads in instructions in from a file
 Vm *
-vm_new (char const instructions[])
+vm_new (FILE *program)
 {
-    E_CHECK (instructions != NULL, NULL);
+    E_CHECK (program != NULL, NULL);
     Vm *vm = malloc (sizeof (Vm));
     E_CHECK (vm != NULL, NULL);
     vm->stack = malloc (sizeof (char) * DEFAULT_STACK_SIZE);
@@ -64,9 +62,9 @@ vm_new (char const instructions[])
         return NULL;
     }
 
-    vm->instructions = instructions;
+    vm->program = program;
     vm->running = true;
-    vm->ip = 0;
+    vm->verbose = false;
     vm->sp = 0;
     vm->stack[0] = 0; // Clear the first value
     vm->last_error = VM_SUCCESS;
@@ -97,9 +95,7 @@ vm_reset (Vm *vm)
 {
     E_CHECK (vm != NULL, VM_NULL_BEFORE_RESET);
     E_CHECK (vm->stack != NULL, VM_STACK_NULL_BEFORE_RESET);
-    E_CHECK (vm->instructions != NULL, VM_INSTRUCTIONS_NULL_BEFORE_RESET);
-
-    vm->ip = 0;
+    E_CHECK (vm->program != NULL, VM_PROGRAM_NULL_BEFORE_RESET);
     vm->sp = 0;
     vm->stack[0] = 0; // Clear the first value
     vm->last_error = VM_SUCCESS;
@@ -149,7 +145,19 @@ drop (Vm *vm)
 int
 fetch (Vm *vm)
 {
-    return vm->instructions[vm->ip++];
+    int c = fgetc (vm->program);
+
+    if (c == EOF)
+        vm->last_error = VM_PROGRAM_EOF_ON_STEP;
+
+    return c;
+}
+
+
+void
+seek (Vm *vm, int loc)
+{
+    fseek (vm->program, loc, SEEK_SET);
 }
 
 
@@ -158,12 +166,17 @@ vm_step (Vm *vm)
 {
     E_CHECK (vm != NULL, VM_NULL_BEFORE_STEP);
     E_CHECK (vm->stack != NULL, VM_STACK_NULL_BEFORE_STEP);
-    E_CHECK (vm->instructions != NULL, VM_INSTRUCTIONS_NULL_BEFORE_STEP);
+    E_CHECK (vm->program != NULL, VM_PROGRAM_NULL_BEFORE_STEP);
     E_CHECK (vm->sp <= DEFAULT_STACK_SIZE, VM_SP_EXCEEDED_MAX_STACK_SIZE);
     E_CHECK (vm->running, VM_STEP_CALLED_AFTER_HALT);
     E_CHECK (vm->last_error == VM_SUCCESS, vm->last_error);
 
-    switch (fetch (vm))
+    int op = fetch (vm);
+
+    if (vm->verbose)
+        printf ("%s\n", vm_instruction_string (op));
+
+    switch (op)
     {
     case HLT:
     {
@@ -266,7 +279,7 @@ vm_step (Vm *vm)
     case JMP:
     {
         int loc = fetch (vm);
-        vm->ip = loc;
+        seek (vm, loc);
         break;
     }
     case JIF:
@@ -275,7 +288,7 @@ vm_step (Vm *vm)
         int cond = drop (vm);
 
         if (cond)
-            vm->ip = loc;
+            seek (vm, loc);
 
         break;
     }

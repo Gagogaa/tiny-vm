@@ -1,38 +1,42 @@
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
 #include "vm.h"
 #include "common.h"
 #include "opcodes.h"
 
 
-char const program[] = {
-    PSH, 5,
-    PSH, 6,
-    ADD,
-    PSH, 0,
-    PSH, 5,
-    DIV,
-    HLT
-};
-
-
-// TODO Prepare this to accept command line args from the user
 int
 main (int argc, char *argv[])
 {
-    UNUSED (argc);
-    UNUSED (argv);
-    Vm *vm = vm_new (program);
+    FILE *vm_program;
 
-    if (vm)
+    if (argc != 2)
     {
-        VmErrorCode error = vm_run (vm);
+        printf ("Vm only accepts one argument: \"vm FILE\"\n");
+        exit (-1);
+    }
 
-        if (error)
-            printf ("Error: %s\n", vm_error_code_string (error));
+    vm_program = fopen (argv[1], "r");
 
-        UNUSED (vm_destroy (vm));
+    if (vm_program)
+    {
+        Vm *vm = vm_new (vm_program);
+
+        if (vm)
+        {
+            vm->verbose = true;
+            VmErrorCode error = vm_run (vm);
+
+            if (error)
+                printf ("Error: %s\n", vm_error_code_string (error));
+
+            UNUSED (vm_destroy (vm));
+        }
+        else
+            printf ("Unable to initialize vm\n");
+
+        fclose (vm_program);
     }
     else
-        printf ("Unable to initialize vm\n");
+        printf ("Error opening file %s\n", argv[1]);
 }
