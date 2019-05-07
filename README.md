@@ -35,6 +35,7 @@ Then compile and run the tiny-vm program:
 
 ## VM-Instructions
 For reference here are the vm instructions:
+
 | Instruction | Description                                                                                      |
 | ---         | ---                                                                                              |
 | HLT         | Stop the vm                                                                                      |
