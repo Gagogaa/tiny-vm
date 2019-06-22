@@ -1,3 +1,5 @@
+// Fix for windows 'deprecating' standard library functions
+#define _CRT_SECURE_NO_DEPRECATE
 #include <stdio.h>
 #include <stdlib.h>
 #include "vm.h"
@@ -16,7 +18,7 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    UNUSED(fopen_s (&vm_program, argv[1], "r"));
+    vm_program = fopen (argv[1], "r");
 
     if (vm_program)
     {

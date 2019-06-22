@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_DEPRECATE
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -111,8 +112,8 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-     UNUSED(fopen_s (&foutfile, outfile, "w"));
-     UNUSED(fopen_s (&finfile, infile, "r"));
+    foutfile = fopen (outfile, "w");
+    finfile = fopen (infile, "r");
 
     if (!foutfile)
     {
