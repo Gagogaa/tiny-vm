@@ -1,10 +1,15 @@
 #include <stdio.h>
-#include <getopt.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "opcodes.h"
-#include "string.h"
+#include "common.h"
 
+#ifdef _WIN32
+#include "wingetopt.h"
+#else
+#include <getopt.h>
+#endif
 
 #define INSTR(val) val
 
@@ -21,22 +26,15 @@ char const instructions[] = {
 
 
 char const * DEFAULT_OUTPUT_FILENAME = "a.out";
-char const * SHORT_OPTIONS = "o:i:h";
-struct option LONG_OPTIONS[] =
-{
-    {"out-file", required_argument, NULL, 0},
-    {"in-file", required_argument, NULL, 0},
-    {"help", no_argument, NULL, 0},
-    {0, 0, 0, 0}
-};
+char * SHORT_OPTIONS = "o:i:h";
 char const * HELP_INFO = "\
 Usage: as -i INFILE [OPTION...] \n\
 Assemble a tiny-vm file. \n\
 \n\
 Argumets: \n\
- -o, --out-file        file name for the output file, it's \"a.out\" by default \n\
- -i, --in-file         file name for the input file \n\
- -h, --help            display this information \n\
+ -o        file name for the output file, it's \"a.out\" by default \n\
+ -i        file name for the input file \n\
+ -h        display this information \n\
 \n";
 int const MAX_OP_LENGTH = 5;
 
@@ -75,7 +73,6 @@ get_next (FILE *fp, char *opcode_buff)
 int
 main (int argc, char *argv[])
 {
-    int long_opt_index;
     int opt;
     char const *infile = "";
     char const *outfile = DEFAULT_OUTPUT_FILENAME;
@@ -85,22 +82,10 @@ main (int argc, char *argv[])
     FILE *finfile;
     FILE *foutfile;
 
-    while ((opt = getopt_long (argc, argv, SHORT_OPTIONS, LONG_OPTIONS, &long_opt_index)) != -1)
+    while ((opt = getopt (argc, argv, SHORT_OPTIONS)) != -1)
     {
         switch (opt)
         {
-        case 0: // Handel long options
-            if (long_opt_index == 0)
-                outfile = optarg;
-            else if (long_opt_index == 1)
-                infile = optarg;
-            else if (long_opt_index == 2)
-            {
-                printf ("\n%s", HELP_INFO);
-                exit (0);
-            }
-            break;
-
         case 'o':
             outfile = optarg;
             break;
@@ -126,8 +111,8 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    foutfile = fopen (outfile, "w");
-    finfile = fopen (infile, "r");
+     UNUSED(fopen_s (&foutfile, outfile, "w"));
+     UNUSED(fopen_s (&finfile, infile, "r"));
 
     if (!foutfile)
     {

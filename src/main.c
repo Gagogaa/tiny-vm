@@ -16,7 +16,7 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    vm_program = fopen (argv[1], "r");
+    UNUSED(fopen_s (&vm_program, argv[1], "r"));
 
     if (vm_program)
     {
