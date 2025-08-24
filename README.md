@@ -9,7 +9,7 @@ tiny-vm uses meson for its build system. Read more about it and how to install i
 
 Once you have meson installed run the following to build the vm and assembler:
 ```bash
-meson target
+meson setup target
 ninja -C target
 ```
 
