@@ -108,7 +108,7 @@ VmErrorCode
 vm_run (Vm *vm)
 {
     E_CHECK (vm != NULL, VM_NULL_ON_RUN);
-    VmErrorCode error;
+    VmErrorCode error = VM_NOT_RUNNING_ON_STEP;
 
     while (vm->running)
     {
@@ -125,7 +125,7 @@ vm_run (Vm *vm)
 void
 push (Vm *vm, int val)
 {
-    vm->stack[vm->sp++] = val;
+    vm->stack[vm->sp++] = (char) val;
 }
 
 

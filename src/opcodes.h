@@ -1,3 +1,4 @@
+#pragma once
 // | HLT     | Stop the vm                                                                                      |
 // | PSH N   | Push N on top of the stack                                                                       |
 // | POP     | Pop a value off of the stack                                                                     |
