@@ -37,7 +37,7 @@ Argumets: \n\
  -i        file name for the input file \n\
  -h        display this information \n\
 \n";
-int const MAX_OP_LENGTH = 5;
+#define MAX_OP_LENGTH 5
 
 
 int
