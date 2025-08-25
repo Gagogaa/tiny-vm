@@ -16,14 +16,14 @@ char    *optarg;                /* argument associated with option */
 *      Parse argc/argv argument vector.
 */
 int
-getopt(int nargc, char * const nargv[], const char *ostr)
+getopt(int argc, char **argv, char *opts)
 {
   static char *place = EMSG;              /* option letter processing */
   const char *oli;                        /* option letter list index */
 
   if (optreset || !*place) {              /* update scanning pointer */
     optreset = 0;
-    if (optind >= nargc || *(place = nargv[optind]) != '-') {
+    if (optind >= argc || *(place = argv[optind]) != '-') {
       place = EMSG;
       return (-1);
     }
@@ -34,7 +34,7 @@ getopt(int nargc, char * const nargv[], const char *ostr)
     }
   }                                       /* option letter okay? */
   if ((optopt = (int)*place++) == (int)':' ||
-    !(oli = strchr(ostr, optopt))) {
+    !(oli = strchr(opts, optopt))) {
       /*
       * if the user didn't specify '-' as an option,
       * assume it means -1.
@@ -43,7 +43,7 @@ getopt(int nargc, char * const nargv[], const char *ostr)
         return (-1);
       if (!*place)
         ++optind;
-      if (opterr && *ostr != ':')
+      if (opterr && *opts != ':')
         (void)printf("illegal option -- %c\n", optopt);
       return (BADCH);
   }
@@ -55,16 +55,16 @@ getopt(int nargc, char * const nargv[], const char *ostr)
   else {                                  /* need an argument */
     if (*place)                     /* no white space */
       optarg = place;
-    else if (nargc <= ++optind) {   /* no arg */
+    else if (argc <= ++optind) {   /* no arg */
       place = EMSG;
-      if (*ostr == ':')
+      if (*opts == ':')
         return (BADARG);
       if (opterr)
         (void)printf("option requires an argument -- %c\n", optopt);
       return (BADCH);
     }
     else                            /* white space */
-      optarg = nargv[optind];
+      optarg = argv[optind];
     place = EMSG;
     ++optind;
   }

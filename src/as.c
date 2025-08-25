@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_DEPRECATE
+#define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -52,7 +52,7 @@ get_next (FILE *fp, char *opcode_buff)
 
     for (i = 0; i < MAX_OP_LENGTH - 1; i++)
     {
-        c = getc (fp);
+        c = (char) getc (fp);
 
         if (c == EOF)
         {
@@ -112,16 +112,14 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    foutfile = fopen (outfile, "w");
-    finfile = fopen (infile, "r");
-
-    if (!foutfile)
+    
+    if (!fopen_s (&foutfile, outfile, "w"))
     {
         fprintf (stderr, "Cannot output to: %s\n", outfile);
         exit (-1);
     }
 
-    if (!finfile)
+    if (!fopen_s (&finfile, infile, "r"))
     {
         fprintf (stderr, "Cannot read: %s\n", infile);
         fclose (foutfile);
@@ -159,7 +157,7 @@ main (int argc, char *argv[])
             || strcmp (opcode_str, "JIF") == 0)
         {
             get_next (finfile, opcode_str);
-            opcode_arg = strtol (opcode_str, &end, 10);
+            opcode_arg = (char) strtol (opcode_str, &end, 10);
             fwrite (&opcode_arg, sizeof (char), 1, foutfile);
         }
     }

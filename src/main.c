@@ -1,5 +1,4 @@
-// Fix for windows 'deprecating' standard library functions
-#define _CRT_SECURE_NO_DEPRECATE
+#define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
 #include <stdlib.h>
 #include "vm.h"
@@ -18,7 +17,12 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    vm_program = fopen (argv[1], "r");
+    if (!fopen_s(&vm_program, argv[1], "r"))
+    {
+        printf ("Vm could not open %s\n", argv[1]);
+        exit (-1);
+    }
+
 
     if (vm_program)
     {
