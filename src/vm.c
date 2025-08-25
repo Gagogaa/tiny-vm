@@ -54,14 +54,35 @@ vm_new (FILE *program)
     E_CHECK (program != NULL, NULL);
     Vm *vm = malloc (sizeof (Vm));
     E_CHECK (vm != NULL, NULL);
-    vm->stack = malloc (sizeof (char) * DEFAULT_STACK_SIZE);
+    char *stack = malloc (sizeof (char) * DEFAULT_STACK_SIZE);
 
-    if (vm->stack == NULL)
+    if (stack == NULL)
     {
         free (vm);
         return NULL;
     }
 
+    if (vm_init(vm, stack, (sizeof (char) * DEFAULT_STACK_SIZE), program) != VM_SUCCESS)
+    {   
+        free (vm);
+        free (stack);
+        return NULL;
+    }
+
+    return vm;
+}
+
+
+VmErrorCode
+vm_init (Vm *vm, char *stack, size_t stack_size, FILE *program)
+{
+    E_CHECK (program != NULL, VM_PROGRAM_IS_NULL);
+    E_CHECK (vm != NULL, VM_IS_NULL);
+    E_CHECK (stack != NULL, VM_STACK_IS_NULL);
+    E_CHECK (stack_size > 0, VM_STACK_SIZE_IS_ZERO);
+
+    vm->stack = stack;
+    vm->stack_size = stack_size;
     vm->program = program;
     vm->running = true;
     vm->verbose = false;
@@ -69,33 +90,28 @@ vm_new (FILE *program)
     vm->stack[0] = 0; // Clear the first value
     vm->last_error = VM_SUCCESS;
 
-    return vm;
+    return VM_SUCCESS;
 }
 
 
 VmErrorCode
 vm_destroy (Vm *vm)
 {
-    E_CHECK (vm != NULL, VM_NULL_BEFORE_DESTROY);
-    VmErrorCode error_code = VM_SUCCESS;
-
-    if (vm->stack == NULL)
-        error_code = VM_STACK_NULL_BEFORE_DESTROY;
-    else
-        free (vm->stack);
-
+    E_CHECK (vm != NULL, VM_IS_NULL);
+    E_CHECK (vm->stack != NULL, VM_STACK_IS_NULL);
+    free (vm->stack);
     free (vm);
 
-    return error_code;
+    return VM_SUCCESS;
 }
 
 
 VmErrorCode
 vm_reset (Vm *vm)
 {
-    E_CHECK (vm != NULL, VM_NULL_BEFORE_RESET);
-    E_CHECK (vm->stack != NULL, VM_STACK_NULL_BEFORE_RESET);
-    E_CHECK (vm->program != NULL, VM_PROGRAM_NULL_BEFORE_RESET);
+    E_CHECK (vm != NULL, VM_IS_NULL);
+    E_CHECK (vm->stack != NULL, VM_STACK_IS_NULL);
+    E_CHECK (vm->program != NULL, VM_PROGRAM_IS_NULL);
     vm->sp = 0;
     vm->stack[0] = 0; // Clear the first value
     vm->last_error = VM_SUCCESS;
@@ -107,16 +123,16 @@ vm_reset (Vm *vm)
 VmErrorCode
 vm_run (Vm *vm)
 {
-    E_CHECK (vm != NULL, VM_NULL_ON_RUN);
-    VmErrorCode error = VM_NOT_RUNNING_ON_STEP;
+    E_CHECK (vm != NULL, VM_IS_NULL);
+    VmErrorCode error;
 
-    while (vm->running)
+    do
     {
         error = vm_step (vm);
 
         if (error)
             break;
-    }
+    } while (vm->running);
 
     return error;
 }
@@ -164,11 +180,11 @@ seek (Vm *vm, int loc)
 VmErrorCode
 vm_step (Vm *vm)
 {
-    E_CHECK (vm != NULL, VM_NULL_BEFORE_STEP);
-    E_CHECK (vm->stack != NULL, VM_STACK_NULL_BEFORE_STEP);
-    E_CHECK (vm->program != NULL, VM_PROGRAM_NULL_BEFORE_STEP);
-    E_CHECK (vm->sp <= DEFAULT_STACK_SIZE, VM_SP_EXCEEDED_MAX_STACK_SIZE);
-    E_CHECK (vm->running, VM_STEP_CALLED_AFTER_HALT);
+    E_CHECK (vm != NULL, VM_IS_NULL);
+    E_CHECK (vm->stack != NULL, VM_STACK_IS_NULL);
+    E_CHECK (vm->program != NULL, VM_PROGRAM_IS_NULL);
+    E_CHECK (vm->sp <= vm->stack_size, VM_SP_EXCEEDED_MAX_STACK_SIZE);
+    E_CHECK (vm->running, VM_NOT_RUNNING_ON_STEP);
     E_CHECK (vm->last_error == VM_SUCCESS, vm->last_error);
 
     int op = fetch (vm);
