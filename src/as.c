@@ -1,4 +1,4 @@
-#define __STDC_WANT_LIB_EXT1__ 1
+#define _CRT_SECURE_NO_DEPRECATE
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -8,6 +8,7 @@
 
 #ifdef _WIN32
 #include "wingetopt.h"
+#include "wingetopt.c"
 #else
 #include <getopt.h>
 #endif
@@ -112,14 +113,16 @@ main (int argc, char *argv[])
         exit (-1);
     }
 
-    
-    if (!fopen_s (&foutfile, outfile, "w"))
+    foutfile = fopen (outfile, "w");
+    finfile = fopen (infile, "r");
+
+    if (!foutfile)
     {
         fprintf (stderr, "Cannot output to: %s\n", outfile);
         exit (-1);
     }
 
-    if (!fopen_s (&finfile, infile, "r"))
+    if (!finfile)
     {
         fprintf (stderr, "Cannot read: %s\n", infile);
         fclose (foutfile);
